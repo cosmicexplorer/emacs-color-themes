@@ -47,6 +47,6 @@
      (ediff-odd-diff-B
       ((t (:background "dark blue"))))
      (magit-section-highlight
-      ((t (:background "#aa0")))))))
+      ((t (:background "#430")))))))
 
 (provide 'color-theme-danny)
