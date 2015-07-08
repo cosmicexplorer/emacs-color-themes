@@ -37,6 +37,16 @@
       ((t (:background "#001133"))))
      (org-block-end-line
       ((t (:overline "#A7A6AA" :foreground "#5555ee"
-                     :background "#333333")))))))
+                     :background "#333333"))))
+     (ediff-even-diff-A
+      ((t (:background "dark blue"))))
+     (ediff-even-diff-B
+      ((t (:background "dark blue"))))
+     (ediff-odd-diff-A
+      ((t (:background "dark blue"))))
+     (ediff-odd-diff-B
+      ((t (:background "dark blue"))))
+     (magit-section-highlight
+      ((t (:background "#aa0")))))))
 
 (provide 'color-theme-danny)
