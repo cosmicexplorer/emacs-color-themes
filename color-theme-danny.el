@@ -47,6 +47,15 @@
      (ediff-odd-diff-B
       ((t (:background "dark blue"))))
      (magit-section-highlight
-      ((t (:background "#430")))))))
+      ((t (:background "#430"))))
+     (magit-diff-context-highlight
+      ((t (:background "grey23" :foreground "grey76"))))
+     (magit-diff-context ((t (:background "grey23" :foreground "grey76"))))
+     (magit-diff-removed-highlight
+      ((t (:background "#440000" :foreground "red"))))
+     (magit-diff-removed ((t (:background "#440000" :foreground "red"))))
+     (magit-diff-added-highlight
+      ((t (:background "#004400" :foreground "green"))))
+     (magit-diff-added ((t (:background "#004400" :foreground "green")))))))
 
 (provide 'color-theme-danny)
