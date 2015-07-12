@@ -56,6 +56,10 @@
      (magit-diff-removed ((t (:background "#440000" :foreground "red"))))
      (magit-diff-added-highlight
       ((t (:background "#004400" :foreground "green"))))
-     (magit-diff-added ((t (:background "#004400" :foreground "green")))))))
+     (magit-diff-added ((t (:background "#004400" :foreground "green"))))
+     (magit-diff-hunk-heading
+      ((t (:background "#550" :foreground "#cc0"))))
+     (magit-diff-hunk-heading-highlight
+      ((t (:background "#ee0" :foreground "black")))))))
 
 (provide 'color-theme-danny)
