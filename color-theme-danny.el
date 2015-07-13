@@ -60,6 +60,8 @@
      (magit-diff-hunk-heading
       ((t (:background "#550" :foreground "#dd0"))))
      (magit-diff-hunk-heading-highlight
-      ((t (:background "#dd0" :foreground "black")))))))
+      ((t (:background "#dd0" :foreground "black"))))
+     (magit-blame-heading
+      ((t (:background "#550" :foreground "#dd0")))))))
 
 (provide 'color-theme-danny)
