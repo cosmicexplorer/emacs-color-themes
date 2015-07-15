@@ -4,12 +4,12 @@
   (interactive)
   (color-theme-install
    '(color-theme-danny
-     ((foreground-color . "#00ff00")
+     ((foreground-color . "green")
       (background-color . "black")
       (background-mode . light))
-     (underline ((t (:foreground "brightyellow"))))
-     (italic ((t (:foreground "brightcyan" :italic t))))
-     (bold ((t (:foreground "brightblue" :bold t))))
+     (underline ((t (:foreground "yellow" :underline t))))
+     (italic ((t (:foreground "#ff1493" :italic t))))
+     (bold ((t (:foreground "cyan" :bold t))))
      (bold-italic ((t (:foreground "dark magenta" :bold t :italic t))))
      (font-lock-comment-face
       ((t (:foreground "white" :background "dark magenta"))))
