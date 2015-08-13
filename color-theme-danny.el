@@ -63,7 +63,9 @@
       ((t (:background "#dd0" :foreground "black"))))
      (magit-blame-heading
       ((t (:background "#550" :foreground "#dd0"))))
+     ;; i don't like this since it blots out normal text backgrounds like
+     ;; comments and colors
      (hl-line
-      ((t (:background "#001900" :foreground nil)))))))
+      ((t (:background "#002500" :foreground nil)))))))
 
 (provide 'color-theme-danny)
