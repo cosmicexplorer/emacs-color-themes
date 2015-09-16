@@ -55,11 +55,15 @@
       ((t (:background "#440000" :foreground "red"))))
      (magit-diff-removed ((t (:background "#440000" :foreground "red"))))
      (diff-removed ((t (:background "#440000" :foreground "red"))))
-     (diff-added ((t (:background "#004400" :foreground "green"))))
      (magit-diff-added-highlight
       ((t (:background "#004400" :foreground "green"))))
      (magit-diff-added ((t (:background "#004400" :foreground "green"))))
+     (diff-added ((t (:background "#004400" :foreground "green"))))
      (magit-diff-hunk-heading
+      ((t (:background "#550" :foreground "#dd0"))))
+     (diff-hunk-header
+      ((t (:background "#dd0" :foreground "black"))))
+     (diff-function
       ((t (:background "#550" :foreground "#dd0"))))
      (magit-diff-hunk-heading-highlight
       ((t (:background "#dd0" :foreground "black"))))
