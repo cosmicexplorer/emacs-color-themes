@@ -54,6 +54,8 @@
      (magit-diff-removed-highlight
       ((t (:background "#440000" :foreground "red"))))
      (magit-diff-removed ((t (:background "#440000" :foreground "red"))))
+     (diff-removed ((t (:background "#440000" :foreground "red"))))
+     (diff-added ((t (:background "#004400" :foreground "green"))))
      (magit-diff-added-highlight
       ((t (:background "#004400" :foreground "green"))))
      (magit-diff-added ((t (:background "#004400" :foreground "green"))))
@@ -61,6 +63,8 @@
       ((t (:background "#550" :foreground "#dd0"))))
      (magit-diff-hunk-heading-highlight
       ((t (:background "#dd0" :foreground "black"))))
+     (diff-hunk-header
+      ((t (:background "#550" :foreground "#dd0"))))
      (magit-blame-heading
       ((t (:background "#550" :foreground "#dd0"))))
      ;; i don't like this since it blots out normal text backgrounds like
