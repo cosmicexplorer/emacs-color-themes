@@ -74,6 +74,24 @@
      ;; i don't like this since it blots out normal text backgrounds like
      ;; comments and colors
      (hl-line
-      ((t (:background "#002500" :foreground nil)))))))
+      ((t (:background "#002500" :foreground nil))))
+     (rainbow-delimiters-depth-1-face
+      ((t (:foreground "#ffffff"))))
+     (rainbow-delimiters-depth-2-face
+      ((t (:foreground "#9922cc"))))
+     (rainbow-delimiters-depth-3-face
+      ((t (:foreground "#008833"))))
+     (rainbow-delimiters-depth-4-face
+      ((t (:foreground "#816501"))))
+     (rainbow-delimiters-depth-5-face
+      ((t (:foreground "#5294ff"))))
+     (rainbow-delimiters-depth-6-face
+      ((t (:foreground "#824919"))))
+     (rainbow-delimiters-depth-7-face
+      ((t (:foreground "#2aa"))))
+     (rainbow-delimiters-depth-8-face
+      ((t (:foreground "#902398"))))
+     (rainbow-delimiters-depth-9-face
+      ((t (:foreground "#988131")))))))
 
 (provide 'color-theme-danny)
