@@ -15,10 +15,10 @@
       ((t (:foreground "white" :background "dark magenta"))))
      (font-lock-warning-face
       ((t (:foreground "red" :background "white"))))
-     (modeline-buffer-id ((t (:background "orange"
+     (mode-line-buffer-id ((t (:background "orange"
                                           :foreground "dark red"
                                           :underline nil))))
-     (modeline-mousable ((t (:background "#00ff00" :foreground "white"))))
+     (mode-line-mousable ((t (:background "#00ff00" :foreground "white"))))
      (mode-line
       ((t (:background "#11aa11"
                        :foreground "black"
