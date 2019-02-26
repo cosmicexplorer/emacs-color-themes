@@ -13,6 +13,8 @@
      (bold-italic ((t (:foreground "dark magenta" :bold t :italic t))))
      (font-lock-comment-face
       ((t (:foreground "white" :background "dark magenta"))))
+     (font-lock-string-face
+      ((t (:foreground "orange" :background "#4b4b4b"))))
      (font-lock-warning-face
       ((t (:foreground "red" :background "white"))))
      (mode-line-buffer-id ((t (:background "orange"
