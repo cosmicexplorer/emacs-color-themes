@@ -74,7 +74,7 @@
      (magit-blame-heading
       ((t (:background "#550" :foreground "#dd0"))))
      (hl-line
-      ((t (:background nil :foreground nil :underline "#FFF"))))
+      ((t (:background nil :foreground nil :underline nil))))
      (rainbow-delimiters-depth-1-face
       ((t (:foreground "#ffffff"))))
      (rainbow-delimiters-depth-2-face
@@ -92,6 +92,16 @@
      (rainbow-delimiters-depth-8-face
       ((t (:foreground "#902398"))))
      (rainbow-delimiters-depth-9-face
-      ((t (:foreground "#988131")))))))
+      ((t (:foreground "#988131"))))
+     (highlight-stages-negative-level-face
+      ((t (:background "#ffffff"))))
+     (highlight-stages-level-1-face
+      ((t (:background "#9922cc"))))
+     (highlight-stages-level-2-face
+      ((t (:background "#008833"))))
+     (highlight-stages-level-3-face
+      ((t (:background "#816501"))))
+     (highlight-stages-higher-level-face
+      ((t (:background "#5294ff")))))))
 
 (provide 'color-theme-danny)
