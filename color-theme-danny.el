@@ -73,10 +73,8 @@
       ((t (:background "#550" :foreground "#dd0"))))
      (magit-blame-heading
       ((t (:background "#550" :foreground "#dd0"))))
-     ;; i don't like this since it blots out normal text backgrounds like
-     ;; comments and colors
      (hl-line
-      ((t (:background "#002500" :foreground nil))))
+      ((t (:background nil :foreground nil :underline "#FFF"))))
      (rainbow-delimiters-depth-1-face
       ((t (:foreground "#ffffff"))))
      (rainbow-delimiters-depth-2-face
