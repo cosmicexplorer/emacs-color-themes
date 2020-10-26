@@ -112,7 +112,8 @@
  '(window-divider ((t (:foreground "deep sky blue"))))
  '(window-divider-first-pixel ((t (:foreground "chartreuse"))))
  '(window-divider-last-pixel ((t (:foreground "pale turquoise"))))
- '(woman-unknown ((t (:background "#333333" :foreground "#ff0000")))))
+ '(woman-unknown ((t (:background "#333333" :foreground "#ff0000"))))
+ '(hl-sexp-face ((t (:background "#4b3b4b" :extend t)))))
 
 ;;;###autoload
 (when load-file-name
