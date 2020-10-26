@@ -4,11 +4,11 @@
 (custom-theme-set-faces
  'danny
 
- '(default ((t (:background "black" :foreground "green"))))
- '(underline ((t (:foreground "yellow" :underline t))))
- '(italic ((t (:foreground "#ff1493" :italic t))))
- '(bold ((t (:foreground "cyan" :bold t))))
- '(bold-italic ((t (:foreground "dark magenta" :bold t :italic t))))
+ '(default ((t (:height 100 :background "black" :foreground "green"))))
+ '(underline ((t (:inherit default :foreground "yellow" :underline t))))
+ '(italic ((t (:inherit default :foreground "#ff1493" :slant italic))))
+ '(bold ((t (:inherit default :foreground "cyan" :weight extra-bold))))
+ '(bold-italic ((t (:inherit (bold italic) :foreground "dark magenta" :slant italic :weight bold))))
  '(font-lock-comment-face
    ((t (:foreground "white" :background "dark magenta"))))
  '(font-lock-string-face
@@ -100,7 +100,19 @@
  '(highlight-stages-level-3-face
    ((t (:background "#816501"))))
  '(highlight-stages-higher-level-face
-   ((t (:background "#5294ff")))))
+   ((t (:background "#5294ff"))))
+ '(browse-url-button ((t (:inherit link))))
+ '(cperl-no-trailing-whitespace-face ((t (:underline nil))))
+ '(cursor ((t (:background "cyan"))))
+ '(font-latex-script-char-face ((t (:foreground "burlywood"))))
+ '(font-lock-comment-face ((t (:extend t :background "dark magenta" :foreground "white"))))
+ '(hl-line ((t (:extend t :box (:line-width (3 . 2) :color "sandy brown")))))
+ '(org-agenda-property-face ((t (:inherit font-lock-comment-face :extend nil))))
+ '(region ((t (:extend t :background "blue3" :foreground "white"))))
+ '(window-divider ((t (:foreground "deep sky blue"))))
+ '(window-divider-first-pixel ((t (:foreground "chartreuse"))))
+ '(window-divider-last-pixel ((t (:foreground "pale turquoise"))))
+ '(woman-unknown ((t (:background "#333333" :foreground "#ff0000")))))
 
 ;;;###autoload
 (when load-file-name
