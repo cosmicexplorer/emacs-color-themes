@@ -71,8 +71,6 @@
    ((t (:background "#550" :foreground "#dd0"))))
  '(magit-blame-heading
    ((t (:background "#550" :foreground "#dd0"))))
- '(hl-line
-   ((t (:background nil :foreground nil :underline nil))))
  '(rainbow-delimiters-depth-1-face
    ((t (:foreground "#ffffff"))))
  '(rainbow-delimiters-depth-2-face
