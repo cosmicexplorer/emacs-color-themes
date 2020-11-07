@@ -1,5 +1,16 @@
+(defgroup danny nil
+  "Finally.")
+
 (deftheme danny
   "My theme!")
+
+(defface danny-very-shadowed '((t (:foreground "#454545")))
+  "A face for something which is so shadowed as to be almost invisible.
+
+Similar to `shadow', but more."
+  :group 'danny)
+
+;; (custom-theme-set-variables)
 
 (custom-theme-set-faces
  'danny
@@ -30,6 +41,7 @@
                     :underline nil
                     :overline nil
                     :weight light))))
+ '(minibuffer-line ((t (:background "#37013f" :foreground "dark cyan"))))
  '(org-block-begin-line
    ((t (:underline "#A7A6AA" :foreground "#5555ee"
                    :background "#333333"))))
@@ -111,7 +123,13 @@
  '(window-divider-first-pixel ((t (:foreground "chartreuse"))))
  '(window-divider-last-pixel ((t (:foreground "pale turquoise"))))
  '(woman-unknown ((t (:background "#333333" :foreground "#ff0000"))))
- '(hl-sexp-face ((t (:background "#4b3b4b" :extend t)))))
+ '(hl-sexp-face ((t (:background "#4b3b4b" :extend t))))
+ '(trailing-whitespace ((t (:extend t :background "red1"))))
+ '(fill-column-indicator ((t (:inherit danny-very-shadowed :inverse-video t))))
+ '(info-xref ((t  (:inherit link :background  "#884488" :box (:line-width  (2 . 2)  :color "magenta"
+                                                                           :style released-button)))))
+ '(Info-quoted ((t (:inherit inform-color ))))
+ '(variable-pitch ((t (:background "#1f0000" :distant-foreground "magenta" :foreground "yellow" :box (:line-width (6 . 2) :color "#cc69b4" :style pressed-button))))))
 
 ;;;###autoload
 (when load-file-name
