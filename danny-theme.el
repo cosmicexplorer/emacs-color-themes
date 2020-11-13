@@ -1,7 +1,36 @@
-(defgroup danny nil
-  "Finally.")
+(require 'cl)
+(require 's)
+(require 'text-property-search)
 
-(defun danny-get-time-zone-and-offset-nicely ()
+(require 'dash)
+
+
+(defgroup danny nil
+  "Finally!")
+
+(defgroup danny-bindings nil
+  "Methods relating to how variables and methods can be bound."
+  :group 'danny)
+
+(defcustom danny-safe-local-variables
+  '(org-todo-keyword-faces)
+  "Symbols which are set as `safe-local-variable's in `danny-theme-make-safe-local-variables'."
+  :type '(repeat variable)
+  :group 'danny-bindings)
+
+(defgroup danny-display nil
+  "Affecting display in `danny-theme'."
+  :group 'danny
+  :group 'display)
+
+(defcustom danny-mode-line-separator "|"
+  "The string separating minor mode summaries in the `mode-line-format' in `danny-theme'."
+  :type 'string
+  :group 'danny-display)
+
+
+(defun danny--get-time-zone-and-offset-nicely ()
+  "Returns (<local zone name>, <utc offset (int)>, <nicely-formatted offset>)."
   (cl-destructuring-bind (utc-offset-seconds local-zone-name) (current-time-zone)
     (cl-assert (% utc-offset-seconds 3600) t
                "The number of seconds should be equal to an hour. We are directly assuming we are not in Sri Lanka for ease of programming.")
@@ -17,25 +46,145 @@
         ,(format "UTC%s%d" parity-sym abs-offset)
         ))))
 
-(defun danny-get-a-nice-updating-time-display ()
+(defun danny--get-a-nice-time-display ()
   (cl-destructuring-bind (local-zone-name utc-offset nicely-formatted-utc-offset)
-      (danny-get-time-zone-and-offset-nicely)
+      (danny--get-time-zone-and-offset-nicely)
     (let ((full-time (format-time-string "%H:%M:%S"))
           (unix-time (format-time-string "%s")))
       (format "%s %d[%s] %s" full-time utc-offset local-zone-name unix-time))))
 
-(deftheme danny
-  "My theme!")
+(defun danny--trim-whitespace (s)
+  ;; TODO: use `rx' if it's not too new?
+  (replace-regexp-in-string "\\`\\s-+\\|\\s-+\\'" "" s))
 
-(defface danny-very-shadowed '((t (:foreground "#454545")))
+(defun danny--is-probably-a-real-file (&optional buffer)
+  (and (stringp (buffer-file-name buffer))
+       (file-readable-p (buffer-file-name buffer))))
+
+(defun danny--get-buffer-mode-line-text ()
+  "Get a string representation of the current buffer."
+  (->> (if (danny--is-probably-a-real-file)
+           nil
+         'danny-help-ish-mode-line)
+       (format-mode-line mode-line-buffer-identification)
+       (danny--trim-whitespace)))
+
+(defun danny--ensure-single-string-in-list (input)
+  (and (listp input)
+       (= 1 (length input))
+       (stringp (car input))))
+
+;;; TODO: upstream this!!!
+(defun danny--split-modes-by-property (property-name input-text)
+  "Returns a list of substrings with a string value in INPUT-TEXT for the named PROPERTY-NAME."
+  (cl-check-type property-name symbol)
+  (cl-check-type input-text string)
+  (--> (with-temp-buffer
+         (insert input-text)
+         (cl-loop initially (goto-char (point-min))
+                  for match = (text-property-search-forward
+                               property-name
+                               nil
+                               (lambda (_arg property-value)
+                                 (stringp property-value)))
+                  while match
+                  collect (buffer-substring
+                           (prop-match-beginning match)
+                           (prop-match-end match))))
+       ;; TODO: We assume the first is the  "major". There are occasionally minor modes which expect
+       ;; to be formatted right next to the major mode representation.
+       (cl-destructuring-bind (major . minor-modes) it
+         (cons
+          (danny--add-face-text-property 'danny-major-mode-mode-line major)
+          (->> minor-modes
+               (-map #'s-split-words)
+               (-flatten-n 1)
+               (--map (danny--add-face-text-property 'danny-minor-mode-mode-line it)))))))
+
+; TODO: upstream this to emacs!
+(defun danny--add-face-text-property (face text)
+  (add-face-text-property
+   0
+   (length text)
+   face
+   nil
+   text)
+  text)
+
+(defun danny--format-mode-list-from-help-echo ()
+  "Apply a specific face to the major vs minor modes that getmixed together in \"lighter\" strings."
+  (->> (danny--split-modes-by-property
+        'help-echo
+        (format-mode-line mode-line-modes))
+       (--reduce (concat acc danny-mode-line-separator it))))
+
+
+(defgroup danny-faces nil
+  "Customization of faces in `danny-theme'."
+  :group 'danny-display
+  :group 'faces)
+
+(defface danny-very-shadowed '((t (:foreground "#454545" :inherit shadow)))
   "A face for something which is so shadowed as to be almost invisible.
 
 Similar to `shadow', but more."
-  :group 'danny)
+  :group 'danny-faces)
+
+(defgroup danny-mode-line nil
+  "Customization specific to the mode line in `danny-theme'."
+  :group 'danny-faces)
+
+(defface danny-line-number '((t))
+  "Face for the line number in the mode line in `danny-theme'."
+  :group 'danny-mode-line)
+
+(defface danny-column-number '((t))
+  "Face for the column number in the mode line in `danny-theme'."
+  :group 'danny-mode-line)
+
+(defface danny-modified-string '((t))
+  "Face for the modified string in the mode line in `danny-theme'."
+  :group 'danny-mode-line)
+
+(defface danny-buffer-progress '((t))
+  "Face for the buffer progress indicator in the mode line in `danny-theme'."
+  :group 'danny-mode-line)
+
+(defface danny-mode-line-punctuation '((t))
+  "Face for any punctuation in the mode line in `danny-theme'."
+  :group 'danny-mode-line)
+
+(defface danny-help-ish-mode-line '((t))
+  "Face for any buffer not backed a real file in `danny-theme'."
+  :group 'danny-mode-line)
+
+(defface danny-major-mode-mode-line '((t))
+  "Face for the major mode string in the mode line in `danny-theme'."
+  :group 'danny-mode-line)
+
+(defface danny-minor-mode-mode-line '((t))
+  "Face for the minor mode string in the mode line in `danny-theme'."
+  :group 'danny-mode-line)
+
+
+(deftheme danny
+  "My theme!")
 
 (custom-theme-set-variables
  'danny
 
+ '(mode-line-format
+   '(
+    (:propertize "%l" face danny-line-number)
+    (:propertize ":" face danny-mode-line-punctuation)
+    (:propertize "%c" face danny-column-number)
+    (:propertize "|" face danny-mode-line-punctuation)
+    (:propertize "%p" face danny-buffer-progress)
+    (:propertize "|" face danny-mode-line-punctuation)
+    (:propertize mode-line-modified face danny-modified-string)
+    (:eval (danny--get-buffer-mode-line-text))
+    (:eval (danny--format-mode-list-from-help-echo))
+    ))
  '(after-save-hook
    '(executable-make-buffer-file-executable-if-script-p output-lines-in-buffer helm-swoop--clear-cache rmail-after-save-hook))
  '(archive-visit-single-files t)
@@ -269,12 +418,13 @@ Similar to `shadow', but more."
  '(minibuffer-depth-indicate-mode t)
  '(minibuffer-eldef-shorten-default t)
  '(minibuffer-electric-default-mode t)
- '(minibuffer-line-format '((:eval (danny-get-a-nice-updating-time-display))))
+ '(minibuffer-line-format '((:eval (danny--get-a-nice-time-display))))
  '(minibuffer-line-mode t)
  '(minibuffer-line-refresh-interval 1)
  '(minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
  '(mode-require-final-newline t)
  '(mouse-autoselect-window nil)
+ '(multi-isearch-isearch t)
  '(next-line-add-newlines t)
  '(ns-alternate-modifier 'super)
  '(ns-command-modifier 'meta)
@@ -321,195 +471,6 @@ Similar to `shadow', but more."
    '((highlight-80+-columns . 100)
      (highlight-stages-mode)
      (highlight-sexp-mode)
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :inherit bold-italic :background "white" :box t :weight ultra-bold)
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :inherit bold-italic :background "white" :box t)
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :inherit bold-italic :background "white" :underline t)
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :inherit bold-italic :background "white" :underline t :family "dejavu serif mono")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :inherit bold-italic :family "dejavu serif mono")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :face bold-italic :family "dejavu serif mono")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "navy" :background "aquamarine" :weight bold :slant oblique :family "dejavu serif mono")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "navy" :background "aquamarine" :box t :weight bold :slant oblique :family "dejavu serif mono")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "navy" :background "aquamarine" :box t :weight bold :family "dejavu serif mono")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "navy" :background "aquamarine" :box t :weight bold :family "dejavu sans mono")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "navy" :background "aquamarine" :box t :weight bold :height 100)
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "navy" :background "aquamarine")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "navy" :background "aquamarine" :box t :weight bold)
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "chartreuse" :box t :weight bold :slant oblique)
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "chartreuse" :box t :weight bold)
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "chartreuse" :box t :weight "heavy")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "SkyBlue" :box t :weight "heavy")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "#223fff" :box t :weight "heavy")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "#223" :box t :weight "heavy")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "#223" :box t :background "green")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "#33ffff" :box t :background "ForestGreen")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "#33ffff" :box t :background "green")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "#ffaabb" :slant oblique)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "#33ffff" :box t :weight "black")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "magenta" :weight bold)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "#33ffff" :box t :weight "black")
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "magenta" :weight bold)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic :overline t)
-      ("FEASIBLE" :foreground "#00ccff" :weight heavy)
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "magenta" :weight bold)
-      ("PLAUSIBLE" :foreground "yellow" :underline t :background "red")
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic)
-      ("FEASIBLE" :foreground "#00ccff" :weight heavy)
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
-     (org-todo-keyword-faces
-      ("UNCLEAR" :foreground "red" :box t :weight light)
-      ("RESEARCH" :foreground "magenta" :weight bold)
-      ("PLAUSIBLE" :foreground "yellow" :underline t)
-      ("PROOFOFCONCEPT" :foreground "PaleGreen" :weight bold :slant italic)
-      ("FEASIBLE" :foreground "#00ccff" :weight heavy)
-      ("MAINTAINABLE" :foreground "#22aa11" :strike-through t))
      (highlight-80+-mode)
      (TeX-auto-untabify . t)
      (comment-start . //)
@@ -832,11 +793,29 @@ Similar to `shadow', but more."
                                                                                      pressed-button)))))
  '(link ((t (:extend t :foreground "cyan1" :underline t))))
  '(link-visited ((t (:inherit link :extend t :foreground "violet"))))
- '(tutorial-warning-face ((t (:inherit font-lock-warning-face)))))
+ '(tutorial-warning-face ((t (:inherit font-lock-warning-face))))
+ '(danny-help-ish-mode-line ((t :inverse-video t))))
 
+
 ;;;###autoload
 (when load-file-name
   (add-to-list 'custom-theme-load-path
                (file-name-as-directory (file-name-directory load-file-name))))
+
+;;;###autoload
+(defun danny-theme-make-safe-local-variables ()
+  (interactive)
+  (let ((ignore-callback (lambda (&rest _) t)))
+    (--map (put it 'safe-local-variable ignore-callback)
+           danny-safe-local-variables)))
+
+;;;###autoload
+(defun danny-setup ()
+  (interactive)
+  (enable-theme 'danny)
+  ;; NB: I do not know why this needs to be enabled both now and later.  But otherwise our
+  ;; `hl-line' face is not applied.
+  (add-hook 'window-setup-hook (z (enable-theme 'danny)) 99)
+  (danny-theme-make-safe-local-variables))
 
 (provide-theme 'danny)
