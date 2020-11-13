@@ -477,7 +477,6 @@ Similar to `shadow', but more."
  '(fill-nobreak-invisible t)
  '(fill-nobreak-predicate '(fill-single-word-nobreak-p fill-single-char-nobreak-p))
  '(fill-separate-heterogeneous-words-with-space t)
- '(fix-info-rename-buffer-mode t)
  '(git-gutter:update-hooks
    '(after-save-hook after-revert-hook find-file-hook after-change-major-mode-hook text-scale-mode-hook magit-revert-buffer-hook magit-status-refresh-hook magit-run-git-hook))
  '(git-gutter:update-interval 1)
