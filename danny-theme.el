@@ -30,7 +30,9 @@
 
 (defcustom danny-mode-line-action-alist
   `(((named-group :all bos "ELisp" (* anychar) eos) . all)
-    ((: bos (named-group :all (** 0 4 anychar))) . all))
+    ((: bos (named-group :content (** 0 4 anychar))
+            (named-group :rest (* anychar) eos)) .
+     (propertize content 'was-truncated (length rest))))
   "An alist of `helm-rg-rx' inputs and corresponding output expressions."
   :type '(alist :key-type sexp :value-type sexp)
   :group 'danny-display)
@@ -64,9 +66,17 @@
   ;; TODO: use `rx' if it's not too new?
   (replace-regexp-in-string "\\`\\s-+\\|\\s-+\\'" "" s))
 
+(defvar-local danny--buffer-is-real 'unset
+  "Memoize `danny--is-probably-a-real-file'.")
+
 (defun danny--is-probably-a-real-file (&optional buffer)
-  (and (stringp (buffer-file-name buffer))
-       (file-readable-p (buffer-file-name buffer))))
+  (let ((buffer (or buffer (current-buffer))))
+    (pcase-exhaustive danny--buffer-is-real
+      (`unset
+       (setq danny--buffer-is-real
+             (and (stringp (buffer-file-name buffer))
+                  (file-readable-p (buffer-file-name buffer)))))
+      (_ danny--buffer-is-real))))
 
 (defun danny--get-buffer-mode-line-text ()
   "Get a string representation of the current buffer."
@@ -76,11 +86,107 @@
        (format-mode-line mode-line-buffer-identification)
        (danny--trim-whitespace)))
 
-(defun danny--get-modified-mark ()
+(defun danny--buffer-percentage ()
+  (let ((progress (--> (point)
+                       (float it)
+                       (/ it (point-max)))))
+       (cl-assert (and (>= progress 0.0) (<= progress 1.0)))
+       progress))
+
+(defun danny--is-t (val)
+  (eq val t))
+
+(cl-deftype danny-bool ()
+  "No clue why `bool' and `boolean' don't seem to work on `t' and `nil'"
+  `(satisfies (lambda (x)
+                (or (eq x t)
+                    (eq x nil)))))
+
+(defun danny--within-unit-weight (x &optional force)
+  (cl-check-type x number)
+  (cl-check-type force danny-bool)
+  (if force
+      (-> x (min 0) (max 1))
+    (if (and (>= x 0) (<= x 1))
+        x
+      nil)))
+
+(cl-deftype danny-unitless-percentage ()
+  `(and number
+        (satisfies danny--within-unit-weight)))
+
+;;; TODO: make 2*it*pi/3, ... into an infinite stream and lazy eval!
+;; (defun danny--iterate-stream (start op)
+;; ())
+
+;;; TODO!!!!
+;; (cl-deftype danny-numeric-range (numeric-type &key (min nil) (max nil))
+;;   `(and ,numeric-type
+;;         ,(if min `(satisfies (lambda (x) (<= x ,min))))
+;;         ,(if max `(satisfies (lambda (x) (>= x ,max))))))
+
+(cl-deftype danny-natural ()
+  ;; `(danny-numeric-range integer :min 1)
+  `(and integer
+        (satisfies (lambda (x) (>= x 1)))))
+
+(defun danny--constant-pie-chart-for-circle (total num-sections)
+  (cl-check-type total number)
+  (cl-check-type num-sections danny-natural)
+  (cl-loop with increment = (-> total (float) (/ num-sections))
+           for section-index from 1 upto num-sections
+           collect (* increment section-index)))
+
+(defun danny--calc-diff (x y)
+  (-> (- x y) (abs)))
+
+(cl-defun danny--validate-radian (maybe-radian &optional (delta 1e-5))
+  (and (>= maybe-radian 0)
+       (< delta (danny--calc-diff maybe-radian pi))
+       maybe-radian))
+
+(cl-deftype danny-radian (&optional (delta 1e-5))
+  `(and number
+        (satisfies danny--validate-radian)))
+
+(defconst danny--color-circle-space-rgb 3
+  "Declare the number of channels in RGB again, for some reason.")
+
+(cl-defun danny--make-rgb-steps (&key (num-steps 3))
+  (cl-check-type num-steps danny-natural)
+  (cl-destructuring-bind () (->> (danny--constant-pie-chart-for-circle pi num-steps)
+                                 (--map (* it (danny--buffer-percentage)))
+                                 (-map #'sin)
+                                 (--map (* it 16))
+                                 (-map #'round))))
+
+(defun danny--get-color-intensities-for-progress ()
+  (->> (danny--buffer-percentage) ; we are in [0-1] now
+       (* (/ pi 2))               ; we are radians now
+       ;; we are a length-3 list of (radians representing R,G, and B channels) now
+       (make-list 3)
+       (-map #'cos)                     ; so we go from [0-1] in trig
+       (apply #'* 16)                   ; back to hex now
+       (round)))
+
+(defun danny--get-color-for-buffer-progress ()
+  (let* ((rgb (->> (danny--buffer-percentage)
+                   (* pi)
+                   (sin)
+                   (* 16)
+                   (round)))
+         (negative (mod (- rgb) 16)))
+    (list
+     (->> (color-rgb-to-hex rgb rgb rgb 2)
+          (cons 'foreground-color))
+     (->> (color-rgb-to-hex negative negative negative 2)
+          (cons 'background-color)))))
+
+(defun danny--get-modified-mark()
   "Get a string representing the modification state of the buffer, if applicable."
-  (if (danny--is-probably-a-real-file)
-      (format-mode-line mode-line-modified 'danny-modified-string)
-    ""))
+  (->> (format "%d%%%%" (round (* 100 (danny--buffer-percentage))))
+       (danny--add-face-text-property 'danny-buffer-progress)
+       (danny--add-face-text-property (danny--get-color-for-buffer-progress))))
 
 (defun danny--ensure-single-string-in-list (input)
   (and (listp input)
@@ -115,24 +221,41 @@
   (eval `(pcase-exhaustive input
            ,@(--map `((helm-rg-rx ,(car it)) ,(cdr it)) danny-mode-line-action-alist))))
 
+(defun danny--was-major (major-mode-description)
+  (text-property-any
+   0 (length major-mode-description)
+   'was-major t
+   major-mode-description))
+
+(defun danny--how-much-truncated (minor-mode-description)
+  (or (get-text-property 0 'was-truncated minor-mode-description)
+      0))
+
 (defun danny--format-mode-list-from-help-echo ()
   "Apply a specific face to the major vs minor modes that getmixed together in \"lighter\" strings."
   (let ((decorated-separator
          (danny--add-face-text-property 'danny-mode-line-punctuation danny-mode-line-separator)))
-    (->> (pcase-exhaustive
-             (danny--get-modes-and-apply-properties)
+    (->> (pcase-exhaustive (danny--get-modes-and-apply-properties)
            (`(,major . ,minor-modes)
             (cons
-             (danny--add-face-text-property 'danny-major-mode-mode-line major)
+             (--> major
+                  (danny--add-face-text-property 'danny-major-mode-mode-line it)
+                  (propertize it 'was-major t))
              (->> minor-modes
                   (--map (danny--set-help-echo it))
-                  (-map #'danny-try-string-against-actions)
-                  (--map (danny--add-face-text-property 'danny-minor-mode-mode-line it))))))
-         (--reduce (concat acc decorated-separator it))))):
+                  (-map #'danny--try-string-against-actions)
+                  (--map (danny--add-face-text-property 'danny-minor-mode-mode-line it))
+                  (--sort (cond
+                           ((/= (danny--how-much-truncated it)
+                                (danny--how-much-truncated other))
+                            (< (danny--how-much-truncated it)
+                               (danny--how-much-truncated other)))
+                           (t (string-lessp it other))))))))
+         (--reduce (concat acc decorated-separator it)))))
 
 
 (defgroup danny-faces nil
-  "Customization of faces in `danny-theme'."
+"  \"Customization of faces in `danny-theme'.\""
   :group 'danny-display
   :group 'faces)
 
@@ -146,15 +269,19 @@ Similar to `shadow', but more."
   "Customization specific to the mode line in `danny-theme'."
   :group 'danny-faces)
 
-(defface danny-line-number '((t))
+(defface danny-line-number '((t (:background "black" :foreground "white")))
   "Face for the line number in the mode line in `danny-theme'."
   :group 'danny-mode-line)
 
-(defface danny-column-number '((t))
+(defface danny-column-number '((t (:background "white" :foreground "black")))
   "Face for the column number in the mode line in `danny-theme'."
   :group 'danny-mode-line)
 
-(defface danny-modified-string '((t))
+;;; TODO:
+;;; (1) make the background on the left rise and fall with the buffer percentage.
+;;; (2) if a minor mode matched a non-default regexp, order it earlier.
+
+(defface danny-modified-string '((t (:foreground "white" :box (:line-width (2 . 2) :style pressed-button) :weight bold)))
   "Face for the modified string in the mode line in `danny-theme'."
   :group 'danny-mode-line)
 
@@ -162,23 +289,23 @@ Similar to `shadow', but more."
   "Face for the buffer progress indicator in the mode line in `danny-theme'."
   :group 'danny-mode-line)
 
-(defface danny-mode-line-initial-punctuation '((t))
+(defface danny-mode-line-initial-punctuation '((t :foreground "white"))
   "Face for any punctuation in the INITIAL part of the mode line in `danny-theme'."
   :group 'danny-mode-line)
 
-(defface danny-mode-line-punctuation '((t))
+(defface danny-mode-line-punctuation '((t (:foreground "silver" :slant italic :weight bold)))
   "Face for any punctuation in the LATER part of the mode line in `danny-theme'."
   :group 'danny-mode-line)
 
-(defface danny-help-ish-mode-line '((t))
+(defface danny-help-ish-mode-line '((t :inverse-video t))
   "Face for any buffer not backed a real file in `danny-theme'."
   :group 'danny-mode-line)
 
-(defface danny-major-mode-mode-line '((t))
+(defface danny-major-mode-mode-line '((t (:box (:line-width (4 . 4) :style released-button))))
   "Face for the major mode string in the mode line in `danny-theme'."
   :group 'danny-mode-line)
 
-(defface danny-minor-mode-mode-line '((t))
+(defface danny-minor-mode-mode-line '((t (:slant italic)))
   "Face for each minor mode string in the mode line in `danny-theme'."
   :group 'danny-mode-line)
 
@@ -191,15 +318,13 @@ Similar to `shadow', but more."
 
  '(mode-line-format
    '(
-    (:propertize "%l" face danny-line-number)
-    (:propertize ":" face danny-mode-line-initial-punctuation)
-    (:propertize "%c" face danny-column-number)
-    (:propertize "|" face danny-mode-line-initial-punctuation)
-    (:propertize "%p" face danny-buffer-progress)
-    (:eval (danny--get-modified-mark))
-    (:eval (danny--get-buffer-mode-line-text))
-    (:eval (danny--format-mode-list-from-help-echo))
-    ))
+     (:eval (danny--get-modified-mark))
+     (:propertize "%c" face danny-column-number)
+     (:propertize ":" face danny-mode-line-initial-punctuation)
+     (:propertize "%l" face danny-line-number)
+     (:eval (danny--get-buffer-mode-line-text))
+     (:eval (danny--format-mode-list-from-help-echo))
+     ))
  '(after-save-hook
    '(executable-make-buffer-file-executable-if-script-p output-lines-in-buffer helm-swoop--clear-cache rmail-after-save-hook))
  '(archive-visit-single-files t)
@@ -660,7 +785,7 @@ Similar to `shadow', but more."
  '(tool-bar-mode nil)
  '(track-eol t)
  '(transient-mark-mode t)
- '(truncate-lines t)
+ '(truncate-lines nil)
  '(undo-outer-limit 5000000)
  '(undo-tree-auto-save-history t)
  '(undo-tree-enable-undo-in-region nil)
@@ -808,10 +933,7 @@ Similar to `shadow', but more."
                                                                                      pressed-button)))))
  '(link ((t (:extend t :foreground "cyan1" :underline t))))
  '(link-visited ((t (:inherit link :extend t :foreground "violet"))))
- '(tutorial-warning-face ((t (:inherit font-lock-warning-face))))
- '(danny-help-ish-mode-line ((t :inverse-video t)))
- '(danny-mode-line-punctuation ((t :foreground "silver")))
- '(danny-major-mode-mode-line ((t :underline t))))
+ '(tutorial-warning-face ((t (:inherit font-lock-warning-face)))))
 
 
 ;;;###autoload
@@ -836,3 +958,4 @@ Similar to `shadow', but more."
   (danny-theme-make-safe-local-variables))
 
 (provide-theme 'danny)
+(provide 'danny)
