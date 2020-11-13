@@ -74,49 +74,29 @@
        (= 1 (length input))
        (stringp (car input))))
 
-;;; TODO: upstream this!!!
-(defun danny--split-modes-by-property (property-name input-text)
-  "Returns a list of substrings with a string value in INPUT-TEXT for the named PROPERTY-NAME."
-  (cl-check-type property-name symbol)
-  (cl-check-type input-text string)
-  (--> (with-temp-buffer
-         (insert input-text)
-         (cl-loop initially (goto-char (point-min))
-                  for match = (text-property-search-forward
-                               property-name
-                               nil
-                               (lambda (_arg property-value)
-                                 (stringp property-value)))
-                  while match
-                  collect (buffer-substring
-                           (prop-match-beginning match)
-                           (prop-match-end match))))
-       ;; TODO: We assume the first is the  "major". There are occasionally minor modes which expect
-       ;; to be formatted right next to the major mode representation.
-       (cl-destructuring-bind (major . minor-modes) it
-         (cons
-          (danny--add-face-text-property 'danny-major-mode-mode-line major)
-          (->> minor-modes
-               (-map #'s-split-words)
-               (-flatten-n 1)
-               (--map (danny--add-face-text-property 'danny-minor-mode-mode-line it)))))))
+(defun danny--get-modes-and-apply-properties ()
+  "Get a list of strings representing major and minor modes in the current buffer."
+  (pcase-exhaustive (format-mode-line mode-line-modes)
+    ((helm-rg-rx (: bos "(" (named-group :content (+ anychar)) ") " eos))
+     (s-split (rx space) content))))
 
 ; TODO: upstream this to emacs!
-(defun danny--add-face-text-property (face text)
+(defun danny--add-face-text-property (face text &optional append)
   (add-face-text-property
    0
    (length text)
    face
-   nil
+   append
    text)
   text)
 
 (defun danny--format-mode-list-from-help-echo ()
   "Apply a specific face to the major vs minor modes that getmixed together in \"lighter\" strings."
-  (->> (danny--split-modes-by-property
-        'help-echo
-        (format-mode-line mode-line-modes))
-       (--reduce (concat acc danny-mode-line-separator it))))
+  (let ((decorated-separator
+         (danny--add-face-text-property 'danny-mode-line-punctuation danny-mode-line-separator)))
+    (->> (danny--get-modes-and-apply-properties)
+         (--map (substring it 0 (min 4 (length it))))
+         (--reduce (concat acc decorated-separator it)))))
 
 
 (defgroup danny-faces nil
@@ -163,7 +143,7 @@ Similar to `shadow', but more."
   :group 'danny-mode-line)
 
 (defface danny-minor-mode-mode-line '((t))
-  "Face for the minor mode string in the mode line in `danny-theme'."
+  "Face for each minor mode string in the mode line in `danny-theme'."
   :group 'danny-mode-line)
 
 
@@ -794,7 +774,8 @@ Similar to `shadow', but more."
  '(link ((t (:extend t :foreground "cyan1" :underline t))))
  '(link-visited ((t (:inherit link :extend t :foreground "violet"))))
  '(tutorial-warning-face ((t (:inherit font-lock-warning-face))))
- '(danny-help-ish-mode-line ((t :inverse-video t))))
+ '(danny-help-ish-mode-line ((t :inverse-video t)))
+ '(danny-mode-line-punctuation ((t :foreground "silver"))))
 
 
 ;;;###autoload
