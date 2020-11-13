@@ -28,6 +28,13 @@
   :type 'string
   :group 'danny-display)
 
+(defcustom danny-mode-line-action-alist
+  `(((named-group :all bos "ELisp" (* anychar) eos) . all)
+    ((: bos (named-group :all (** 0 4 anychar))) . all))
+  "An alist of `helm-rg-rx' inputs and corresponding output expressions."
+  :type '(alist :key-type sexp :value-type sexp)
+  :group 'danny-display)
+
 
 (defun danny--get-time-zone-and-offset-nicely ()
   "Returns (<local zone name>, <utc offset (int)>, <nicely-formatted offset>)."
@@ -69,6 +76,12 @@
        (format-mode-line mode-line-buffer-identification)
        (danny--trim-whitespace)))
 
+(defun danny--get-modified-mark ()
+  "Get a string representing the modification state of the buffer, if applicable."
+  (if (danny--is-probably-a-real-file)
+      (format-mode-line mode-line-modified 'danny-modified-string)
+    ""))
+
 (defun danny--ensure-single-string-in-list (input)
   (and (listp input)
        (= 1 (length input))
@@ -90,13 +103,32 @@
    text)
   text)
 
+(defun danny--set-help-echo (text)
+  (add-text-properties
+   0
+   (length text)
+   `(help-echo ,text)
+   text)
+  text)
+
+(defun danny--try-string-against-actions (input)
+  (eval `(pcase-exhaustive input
+           ,@(--map `((helm-rg-rx ,(car it)) ,(cdr it)) danny-mode-line-action-alist))))
+
 (defun danny--format-mode-list-from-help-echo ()
   "Apply a specific face to the major vs minor modes that getmixed together in \"lighter\" strings."
   (let ((decorated-separator
          (danny--add-face-text-property 'danny-mode-line-punctuation danny-mode-line-separator)))
-    (->> (danny--get-modes-and-apply-properties)
-         (--map (substring it 0 (min 4 (length it))))
-         (--reduce (concat acc decorated-separator it)))))
+    (->> (pcase-exhaustive
+             (danny--get-modes-and-apply-properties)
+           (`(,major . ,minor-modes)
+            (cons
+             (danny--add-face-text-property 'danny-major-mode-mode-line major)
+             (->> minor-modes
+                  (--map (danny--set-help-echo it))
+                  (-map #'danny-try-string-against-actions)
+                  (--map (danny--add-face-text-property 'danny-minor-mode-mode-line it))))))
+         (--reduce (concat acc decorated-separator it))))):
 
 
 (defgroup danny-faces nil
@@ -130,8 +162,12 @@ Similar to `shadow', but more."
   "Face for the buffer progress indicator in the mode line in `danny-theme'."
   :group 'danny-mode-line)
 
+(defface danny-mode-line-initial-punctuation '((t))
+  "Face for any punctuation in the INITIAL part of the mode line in `danny-theme'."
+  :group 'danny-mode-line)
+
 (defface danny-mode-line-punctuation '((t))
-  "Face for any punctuation in the mode line in `danny-theme'."
+  "Face for any punctuation in the LATER part of the mode line in `danny-theme'."
   :group 'danny-mode-line)
 
 (defface danny-help-ish-mode-line '((t))
@@ -156,12 +192,11 @@ Similar to `shadow', but more."
  '(mode-line-format
    '(
     (:propertize "%l" face danny-line-number)
-    (:propertize ":" face danny-mode-line-punctuation)
+    (:propertize ":" face danny-mode-line-initial-punctuation)
     (:propertize "%c" face danny-column-number)
-    (:propertize "|" face danny-mode-line-punctuation)
+    (:propertize "|" face danny-mode-line-initial-punctuation)
     (:propertize "%p" face danny-buffer-progress)
-    (:propertize "|" face danny-mode-line-punctuation)
-    (:propertize mode-line-modified face danny-modified-string)
+    (:eval (danny--get-modified-mark))
     (:eval (danny--get-buffer-mode-line-text))
     (:eval (danny--format-mode-list-from-help-echo))
     ))
@@ -775,7 +810,8 @@ Similar to `shadow', but more."
  '(link-visited ((t (:inherit link :extend t :foreground "violet"))))
  '(tutorial-warning-face ((t (:inherit font-lock-warning-face))))
  '(danny-help-ish-mode-line ((t :inverse-video t)))
- '(danny-mode-line-punctuation ((t :foreground "silver"))))
+ '(danny-mode-line-punctuation ((t :foreground "silver")))
+ '(danny-major-mode-mode-line ((t :underline t))))
 
 
 ;;;###autoload
