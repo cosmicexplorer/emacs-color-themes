@@ -1,9 +1,11 @@
 (require 'cl)
 (require 'f)
+(require 'rx)
 (require 's)
 (require 'text-property-search)
 
 (require 'dash)
+(require 'helm-rg)
 
 
 (defgroup danny nil
@@ -39,6 +41,18 @@
   :group 'danny-display)
 
 
+;;; TODO: replace `danny--buffer-is-real'!
+;; (cl-defmacro danny--memoize (zero-arg-func &key var)
+;;   "Memoize the execution of a function FUNCTION-OR-SYMBOL using a hash table stored in VAR.
+;;
+;; 0 args -> computes lazily; returns the same value each time.
+;; 1+ args -> [TODO] hashes arguments; returns the same value for equal hashes.
+;;
+;; If  VAR  is  not  provided,  one  will be  generated  from  the  name  `<symbol>--memoizations'.  If
+;; `function-or-symbol' is not a `symbol', VAR *must* be provided or an `error' will be raised."
+;;   )
+
+
 (defun danny--get-time-zone-and-offset-nicely ()
   "Returns (<local zone name>, <utc offset (int)>, <nicely-formatted offset>)."
   (cl-destructuring-bind (utc-offset-seconds local-zone-name) (current-time-zone)
@@ -64,8 +78,11 @@
       (format "%s %d[%s] %s" full-time utc-offset local-zone-name unix-time))))
 
 (defun danny--trim-whitespace (s)
-  ;; TODO: use `rx' if it's not too new?
-  (replace-regexp-in-string "\\`\\s-+\\|\\s-+\\'" "" s))
+  (replace-regexp-in-string
+   (rx (| (: bos (+ space))
+          (: (+ space) eos)))
+   ""
+   s))
 
 (defvar-local danny--buffer-is-real 'unset
   "Memoize `danny--is-probably-a-real-file'.")
@@ -80,7 +97,7 @@
                (file-readable-p (buffer-file-name buffer)))
               ((derived-mode-p 'dired-mode)
                (f-directory-p default-directory))
-              ;; TODO: no clue how the above applies to remote buffers
+              ;; TODO: no clue how the above applies to remote buffers? check info on TRAMP?
               (t nil))))
       (_ danny--buffer-is-real))))
 
@@ -136,11 +153,20 @@
   `(and integer
         (satisfies (lambda (x) (>= x 1)))))
 
-(defun danny--constant-pie-chart-for-circle (total num-sections)
+(cl-defun danny--constant-pie-chart-for-circle (num-sections &key
+                                                             (total (* 2 pi))
+                                                             starts-at-zero
+                                                             inclusive)
   (cl-check-type total number)
   (cl-check-type num-sections danny-natural)
+  (cl-check-type starts-at-zero boolean)
   (cl-loop with increment = (-> total (float) (/ num-sections))
-           for section-index from 1 upto num-sections
+           for section-index
+           from (if starts-at-zero 0 1)
+           upto (let ((num-sections (if starts-at-zero (1- num-sections) num-sections)))
+                  (if inclusive
+                      (1+ num-sections)
+                    num-sections))
            collect (* increment section-index)))
 
 (defun danny--calc-diff (x y)
@@ -158,39 +184,35 @@
 (defconst danny--color-circle-space-rgb 3
   "Declare the number of channels in RGB again, for some reason.")
 
-(cl-defun danny--make-rgb-steps (&key (num-steps 3))
-  (cl-check-type num-steps danny-natural)
-  (cl-destructuring-bind () (->> (danny--constant-pie-chart-for-circle pi num-steps)
-                                 (--map (* it (danny--buffer-percentage)))
-                                 (-map #'sin)
-                                 (--map (* it 16))
-                                 (-map #'round))))
+(defconst danny--period 1.0
+  "???")
 
-(defun danny--get-color-intensities-for-progress ()
-  (->> (danny--buffer-percentage) ; we are in [0-1] now
-       (* (/ pi 2))               ; we are radians now
-       ;; we are a length-3 list of (radians representing R,G, and B channels) now
-       (make-list 3)
-       (-map #'cos)                     ; so we go from [0-1] in trig
-       (apply #'* 16)                   ; back to hex now
-       (round)))
+(defconst danny--scale (/ pi danny--period)
+  "???")
+
+(defun danny--make-rgb-steps ()
+  (let* ((percentage (danny--buffer-percentage))
+         (pi-percentage (* percentage danny--scale)))
+    (-->
+     (danny--constant-pie-chart-for-circle 2 :total danny--scale :starts-at-zero t :inclusive t)
+     (list
+      (--map (+ it pi-percentage) it)
+      (--map (+ (+ it pi-percentage) danny--scale) it))
+     (--map (--map (mod (/ (sin it) danny--scale) 1) it) it))))
 
 (defun danny--get-color-for-buffer-progress ()
-  (let* ((rgb (->> (danny--buffer-percentage)
-                   (* pi)
-                   (sin)
-                   (* 16)
-                   (round)))
-         (negative (mod (- rgb) 16)))
+  (cl-destructuring-bind (positive negative) (danny--make-rgb-steps)
     (list
-     (->> (color-rgb-to-hex rgb rgb rgb 2)
+     (->> (apply #'color-rgb-to-hex (append positive '(2)))
           (cons 'foreground-color))
-     (->> (color-rgb-to-hex negative negative negative 2)
+     (->> (apply #'color-rgb-to-hex (append negative '(2)))
           (cons 'background-color)))))
 
-(defun danny--get-modified-mark()
-  "Get a string representing the modification state of the buffer, if applicable."
-  (->> (format "%d%%%%" (round (* 100 (danny--buffer-percentage))))
+(defun danny--get-modified-mark ()
+  "Get a list representing the modification state of the buffer, if applicable."
+  (->> (concat
+        (format-mode-line mode-line-modified)
+        (->> (format "%d%%%%" (round (* 100 (danny--buffer-percentage))))))
        (danny--add-face-text-property 'danny-buffer-progress)
        (danny--add-face-text-property (danny--get-color-for-buffer-progress))))
 
@@ -319,21 +341,42 @@ Similar to `shadow', but more."
 (deftheme danny
   "My theme!")
 
+(defvar-local danny--theme-line-number-max-length 0
+  "???")
+
+(defvar-local danny--theme-column-number-max-length 0
+  "???")
+
 (custom-theme-set-variables
  'danny
 
  '(mode-line-format
-   '(
-     (:eval (danny--get-modified-mark))
-     (:propertize "%c" face danny-column-number)
-     (:propertize ":" face danny-mode-line-initial-punctuation)
-     (:propertize "%l" face danny-line-number)
+   '((:eval (let* ((line-num (format-mode-line "%l"))
+                   (corrected-line-num
+                    (if (<= (length line-num) danny--theme-line-number-max-length)
+                        (format (format "%%%ds" danny--theme-line-number-max-length) line-num)
+                      (setq-local danny--theme-line-number-max-length (length line-num))
+                      it)))
+              (danny--add-face-text-property 'danny-line-number corrected-line-num)))
+     ;; (:propertize ":" face danny-mode-line-initial-punctuation)
+     (:eval (let* ((column-num (format-mode-line "%c"))
+                   (corrected-column-num
+                    (if (<= (length column-num) danny--theme-column-number-max-length)
+                        (format (format "%%%ds" danny--theme-column-number-max-length) column-num)
+                      (setq-local danny--theme-column-number-max-length (length column-num))
+                      it)))
+              (danny--add-face-text-property 'danny-column-number corrected-column-num)))
+     ;; (:propertize ":" face danny-mode-line-initial-punctuation)
      (:eval (danny--get-buffer-mode-line-text))
-     (:eval (danny--format-mode-list-from-help-echo))
-     ))
+     ;; (:propertize ":" face danny-mode-line-initial-punctuation)
+     (:eval (danny--get-modified-mark))
+     ;; (:propertize ":" face danny-mode-line-initial-punctuation)
+     (:eval (danny--format-mode-list-from-help-echo))))
+ ;; FIXME: *need* to somehow get all these available in this package!
  '(after-save-hook
    '(executable-make-buffer-file-executable-if-script-p output-lines-in-buffer helm-swoop--clear-cache rmail-after-save-hook))
  '(archive-visit-single-files t)
+ ;; FIXME: *need* to somehow get all these available in this package!
  '(before-save-hook
    '(copyright-update time-stamp nuke-whitespace-except-this-line))
  '(bug-reference-bug-regexp
