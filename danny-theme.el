@@ -1,4 +1,5 @@
 (require 'cl)
+(require 'f)
 (require 's)
 (require 'text-property-search)
 
@@ -74,8 +75,13 @@
     (pcase-exhaustive danny--buffer-is-real
       (`unset
        (setq danny--buffer-is-real
-             (and (stringp (buffer-file-name buffer))
-                  (file-readable-p (buffer-file-name buffer)))))
+             (cond
+              ((stringp (buffer-file-name buffer))
+               (file-readable-p (buffer-file-name buffer)))
+              ((derived-mode-p 'dired-mode)
+               (f-directory-p default-directory))
+              ;; TODO: no clue how the above applies to remote buffers
+              (t nil))))
       (_ danny--buffer-is-real))))
 
 (defun danny--get-buffer-mode-line-text ()
