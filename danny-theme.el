@@ -851,7 +851,16 @@ Similar to `shadow', but more."
  '(x-stretch-cursor t)
  '(xmllint-pretty-level 2)
  '(yank-pop-change-selection t)
- '(org-indent-indentation-per-level 0))
+ '(org-indent-indentation-per-level 0)
+ '(org-quote ((t (:inherit (org-block font-lock-string-face)))))
+ '(org-target ((t (:foreground "yellow" :underline "#00ced1"))))
+ '(global-company-mode t)
+ '(helm-completion-style 'emacs)
+ '(org-fontify-quote-and-verse-blocks t)
+ '(org-gnus-prefer-web-links t)
+ '(org-link-keep-stored-after-insertion t)
+ '(org-n-level-faces 8)
+ '(org-pretty-tags-global-mode t))
 
 (custom-theme-set-faces
  'danny
