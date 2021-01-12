@@ -3,6 +3,7 @@
 (require 'rx)
 (require 's)
 (require 'text-property-search)
+(require 'org)
 
 (require 'dash)
 (require 'helm-rg)
@@ -11,14 +12,36 @@
 (defgroup danny nil
   "Finally!")
 
+(defgroup danny-org-todo
+  "Org overrides."
+  :group 'danny
+  :group 'org-todo)
+
+(defcustom danny-org-todo-keyword-sets
+  `((github . ("IDEA(i)" "RESEARCH(r)" "WIP(w)" "WAIT-FOR-REVIEW(W)" "CI(c)" "|" "MERGED(m)"))
+    (blockable . ("|" "BLOCKED(b)" "CANCELLED(c)"))
+    (provenance . ("NOVEL(n)" "|" "PROPRIETARY(P)" "PAPER(p)" "OSS(o)")))
+  :type '(alist :key-type symbol :value-type (repeat string))
+  :group 'danny-org-todo
+  "Keywords for org TODO cycling (see `(org)Top').")
+
+(defun -danny-collect-todo-keyword-sets (alist)
+  ;; TODO: echo text on this according to the symbol at at the car
+  (-map (-lambda ((_ . ))) alist))
+
+(defgroup danny-elisp nil
+  "Methods affecting the emacs lisp environment."
+  :group 'danny
+  :group 'lisp)
+
 (defgroup danny-bindings nil
   "Methods relating to how variables and methods can be bound."
-  :group 'danny)
+  :group 'danny-elisp)
 
 (defcustom danny-safe-local-variables
-  '(org-todo-keyword-faces)
+  `(,@org-todo-keyword-faces)
   "Symbols which are set as `safe-local-variable's in `danny-theme-make-safe-local-variables'."
-  :type '(repeat variable)
+  :type '(repeat variable)e
   :group 'danny-bindings)
 
 (defgroup danny-display nil
@@ -860,7 +883,9 @@ Similar to `shadow', but more."
  '(org-gnus-prefer-web-links t)
  '(org-link-keep-stored-after-insertion t)
  '(org-n-level-faces 8)
- '(org-pretty-tags-global-mode t))
+ '(org-pretty-tags-global-mode t)
+ `(org-todo-keywords ,(-danny-collect-todo-keyword-sets danny-org-todo-keyword-sets))
+ )
 
 (custom-theme-set-faces
  'danny
