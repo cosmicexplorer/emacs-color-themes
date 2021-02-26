@@ -12,7 +12,7 @@
 (defgroup danny nil
   "Finally!")
 
-(defgroup danny-org-todo
+(defgroup danny-org-todo nil
   "Org overrides."
   :group 'danny
   :group 'org-todo)
@@ -21,13 +21,34 @@
   `((github . ("IDEA(i)" "RESEARCH(r)" "WIP(w)" "WAIT-FOR-REVIEW(W)" "CI(c)" "|" "MERGED(m)"))
     (blockable . ("|" "BLOCKED(b)" "CANCELLED(c)"))
     (provenance . ("NOVEL(n)" "|" "PROPRIETARY(P)" "PAPER(p)" "OSS(o)")))
+  ;; TODO: when this is accidentally at the bottom of the arguments, the error message is utterly useless.
+  ;; TODO: evaluate all known (`defcustom' forms (along with `defgroup' and friends) as a check before exiting emacs, to avoid these issues:
+;Debugger entered--Lisp error: (error "Doc string is missing")
+;  signal(error ("Doc string is missing"))
+;  error("Doc string is missing")
+;  custom-declare-variable(danny-org-todo-keyword-sets `((github "IDEA(i)" "RESEARCH(r)" "WIP(w)" "WAIT-FOR-REVIEW(W)" "CI(c)" "|" "MERGED(m)") (blockable "|" "BLOCKED(b)" "CANCELLED(c)") (provenance "NOVEL(n)" "|" "PROPRIETARY(P)" "PAPER(p)" "OSS(o)")) :type (alist :key-type symbol :value-type (repeat string)) :group danny-org-todo "Keywords for org TODO cycling (see `(org)Top').")
+;  eval-buffer(#<buffer  *load*-950721> nil "/Users/mcclanahan7/.emacs.d/emacs-color-themes/dan..." nil t)  ; Reading at buffer position 660
+;  load-with-code-conversion("/Users/mcclanahan7/.emacs.d/emacs-color-themes/dan..." "/Users/mcclanahan7/.emacs.d/emacs-color-themes/dan..." nil t)
+;  require(danny-theme)
+;  setup-submodules-load()
+;  eval-buffer(#<buffer  *load*> nil "/Users/mcclanahan7/.emacs" nil t)  ; Reading at buffer position 2030
+;  load-with-code-conversion("/Users/mcclanahan7/.emacs" "/Users/mcclanahan7/.emacs" t t)
+;  load("~/.emacs" noerror nomessage)
+;  startup--load-user-init-file(#f(compiled-function () #<bytecode 0xb9b7a18fc53df54>) #f(compiled-function () #<bytecode 0x81a392fa1887613>) t)
+;  command-line()
+;  normal-top-level()
+  "Keywords for org TODO cycling (see `(org)Top')."
   :type '(alist :key-type symbol :value-type (repeat string))
   :group 'danny-org-todo
-  "Keywords for org TODO cycling (see `(org)Top').")
+)
 
 (defun -danny-collect-todo-keyword-sets (alist)
-  ;; TODO: echo text on this according to the symbol at at the car
-  (-map (-lambda ((_ . ))) alist))
+  ;; TODO: add 'help-echo-text on this according to the symbol @ `car'.
+  (let ((sentinel-gensym (gensym "collecting-my-todos")))
+    (--reduce (pcase-lambda
+                (`(,acc ,(or kv (let kv sentinel-gensym))))
+                (cons kv acc))
+              alist)))
 
 (defgroup danny-elisp nil
   "Methods affecting the emacs lisp environment."
@@ -41,7 +62,7 @@
 (defcustom danny-safe-local-variables
   `(,@org-todo-keyword-faces)
   "Symbols which are set as `safe-local-variable's in `danny-theme-make-safe-local-variables'."
-  :type '(repeat variable)e
+  :type '(repeat variable)
   :group 'danny-bindings)
 
 (defgroup danny-display nil
@@ -456,6 +477,7 @@ Similar to `shadow', but more."
  '(completion-cycle-threshold t)
  '(completion-pcm-word-delimiters "-_./:|       ")
  '(completions-format 'horizontal)
+ '(copyright-query nil)
  '(cperl-hairy nil)
  '(create-lockfiles nil)
  '(cursor-in-non-selected-windows 'hollow)
@@ -679,7 +701,21 @@ Similar to `shadow', but more."
  '(require-final-newline t)
  '(rust-indent-offset 2)
  '(safe-local-variable-values
-   '((highlight-80+-columns . 100)
+   '((highlight-80+-columns . 88)
+     (org-todo-keyword-faces quote
+                             (("IDEA" . turqoise)
+                              ("RESEARCH" . yellow)
+                              ("WIP" . "sky blue")
+                              ("WAIT-FOR-REVIEW" . org-warning)
+                              ("CANCELED" :foreground "blue" :weight bold)))
+     (org-todo-keywords quote
+                        ((sequence "IDEA" "IN PROGRESS" "GET IT IN" "DONE" "BLOCKED" "|" "DONE" "DELEGATED")))
+     (org-todo-keywords quote
+                        ((sequence "IDEA" "WIP" "DONE" "BLOCKED" "|" "DONE" "DELEGATED")))
+     (org-todo-keywords quote
+                        ((sequence "TODO" "FEEDBACK" "VERIFY" "|" "DONE" "DELEGATED")))
+     (whitespace-check-buffer-indent)
+     (highlight-80+-columns . 100)
      (highlight-stages-mode)
      (highlight-sexp-mode)
      (highlight-80+-mode)
@@ -885,6 +921,7 @@ Similar to `shadow', but more."
  '(org-n-level-faces 8)
  '(org-pretty-tags-global-mode t)
  `(org-todo-keywords ,(-danny-collect-todo-keyword-sets danny-org-todo-keyword-sets))
+ '(python-indent-def-block-scale 2)
  )
 
 (custom-theme-set-faces
