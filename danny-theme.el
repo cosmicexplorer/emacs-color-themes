@@ -65,6 +65,15 @@
   :type '(repeat variable)
   :group 'danny-bindings)
 
+(defgroup danny-auth-info nil
+  "Variables relating to where to source authentication and identity information."
+  :group 'danny-bindings)
+
+(defcustom danny-auth-info-file (expand-file-name "email-auth-info.sexp" user-emacs-directory)
+  "Where to find auth info."
+  :type 'file
+  :group 'danny-auth-info)
+
 (defgroup danny-display nil
   "Affecting display in `danny-theme'."
   :group 'danny
@@ -400,7 +409,7 @@ Similar to `shadow', but more."
                     (if (<= (length line-num) danny--theme-line-number-max-length)
                         (format (format "%%%ds" danny--theme-line-number-max-length) line-num)
                       (setq-local danny--theme-line-number-max-length (length line-num))
-                      it)))
+                      (format (format "%%%ds" danny--theme-line-number-max-length) line-num))))
               (danny--add-face-text-property 'danny-line-number corrected-line-num)))
      ;; (:propertize ":" face danny-mode-line-initial-punctuation)
      (:eval (let* ((column-num (format-mode-line "%c"))
@@ -408,7 +417,7 @@ Similar to `shadow', but more."
                     (if (<= (length column-num) danny--theme-column-number-max-length)
                         (format (format "%%%ds" danny--theme-column-number-max-length) column-num)
                       (setq-local danny--theme-column-number-max-length (length column-num))
-                      it)))
+                      (format (format "%%%ds" danny--theme-column-number-max-length) column-num))))
               (danny--add-face-text-property 'danny-column-number corrected-column-num)))
      ;; (:propertize ":" face danny-mode-line-initial-punctuation)
      (:eval (danny--get-buffer-mode-line-text))
@@ -923,6 +932,7 @@ Similar to `shadow', but more."
  '(org-pretty-tags-global-mode t)
  `(org-todo-keywords ,(-danny-collect-todo-keyword-sets danny-org-todo-keyword-sets))
  '(python-indent-def-block-scale 2)
+ '(warning-suppress-types '((undo discard-info)))
  )
 
 (custom-theme-set-faces
@@ -1075,7 +1085,14 @@ Similar to `shadow', but more."
   ;; NB: I do not know why this needs to be enabled both now and later.  But otherwise our
   ;; `hl-line' face is not applied.
   (add-hook 'window-setup-hook (z (enable-theme 'danny)) 99)
-  (danny-theme-make-safe-local-variables))
+  (danny-theme-make-safe-local-variables)
+
+  (if (file-exists-p danny-auth-info-file)
+      (with-current-buffer (find-file-literally danny-auth-info-file)
+        (eval-buffer)
+        (kill-buffer))
+    (message "note: auth info file '%s' was not found. skipping!"
+             danny-auth-info-file)))
 
 (provide-theme 'danny)
 (provide 'danny)
