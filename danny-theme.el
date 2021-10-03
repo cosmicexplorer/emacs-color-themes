@@ -861,7 +861,6 @@ Similar to `shadow', but more."
      (destroy-whitespace)
      (nil)
      (flycheck-mode)))
- '(save-place-file "saveplace")
  '(save-place-limit nil)
  '(save-place-mode t)
  '(save-place-save-skipped nil)
