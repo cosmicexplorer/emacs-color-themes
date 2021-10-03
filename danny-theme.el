@@ -880,7 +880,9 @@ Similar to `shadow', but more."
  '(shift-select-mode t)
  '(show-paren-mode t)
  '(show-trailing-whitespace t)
- '(smart-tab-completion-functions-alist '((lisp-mode . slime-complete-symbol)))
+ '(smart-tab-completion-functions-alist
+   '((lisp-mode . slime-complete-symbol)
+     (text-mode . dabbrev-completion)))
  '(smart-tab-default-functions-alist
    '((org-mode . org-cycle)
      (markdown-mode . toggle-subtree-markdown)))
