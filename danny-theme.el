@@ -932,7 +932,7 @@ Similar to `shadow', but more."
  '(org-pretty-tags-global-mode t)
  `(org-todo-keywords ,(-danny-collect-todo-keyword-sets danny-org-todo-keyword-sets))
  '(python-indent-def-block-scale 2)
- '(warning-suppress-types '((undo discard-info)))
+ '(warning-suppress-types '((comp) (undo discard-info)))
  )
 
 (custom-theme-set-faces
