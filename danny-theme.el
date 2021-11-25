@@ -464,7 +464,7 @@ Similar to `shadow', but more."
  '(book-txt-view-buffer-contents 'fill)
  '(book-txt-view-font-size 12)
  '(browse-url-browser-function 'browse-url-firefox)
- '(browse-url-firefox-program "firefox-nightly")
+ '(browse-url-firefox-program "firefox")
  '(coffee-indent-like-python-mode t)
  '(coffee-switch-to-compile-buffer t)
  '(coffee-tab-width 2)
