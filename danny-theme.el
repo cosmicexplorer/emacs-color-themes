@@ -933,6 +933,7 @@ Similar to `shadow', but more."
  `(org-todo-keywords ,(-danny-collect-todo-keyword-sets danny-org-todo-keyword-sets))
  '(python-indent-def-block-scale 2)
  '(warning-suppress-types '((comp) (undo discard-info)))
+ '(rust-indent-offset 2)
  )
 
 (custom-theme-set-faces
