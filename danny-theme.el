@@ -44,11 +44,13 @@
 
 (defun -danny-collect-todo-keyword-sets (alist)
   ;; TODO: add 'help-echo-text on this according to the symbol @ `car'.
-  (let ((sentinel-gensym (gensym "collecting-my-todos")))
-    (--reduce (pcase-lambda
-                (`(,acc ,(or kv (let kv sentinel-gensym))))
-                (cons kv acc))
-              alist)))
+  ;; (let ((sentinel-gensym (gensym "collecting-my-todos")))
+  ;;   (--reduce (pcase it
+  ;;               (`(,acc ,(or kv (let kv sentinel-gensym)))
+  ;;                (cons kv acc)))
+  ;;             alist))
+  (--map `(sequence ,@(cdr it))
+         alist))
 
 (defgroup danny-elisp nil
   "Methods affecting the emacs lisp environment."
@@ -930,7 +932,7 @@ Similar to `shadow', but more."
  '(org-link-keep-stored-after-insertion t)
  '(org-n-level-faces 8)
  '(org-pretty-tags-global-mode t)
- `(org-todo-keywords ,(-danny-collect-todo-keyword-sets danny-org-todo-keyword-sets))
+ `(org-todo-keywords ',(-danny-collect-todo-keyword-sets danny-org-todo-keyword-sets))
  '(python-indent-def-block-scale 2)
  '(warning-suppress-types '((comp) (undo discard-info)))
  '(rust-indent-offset 2)
