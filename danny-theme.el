@@ -95,6 +95,13 @@
   :type '(alist :key-type sexp :value-type sexp)
   :group 'danny-display)
 
+(defcustom danny-default-font-family "Telegrama"
+  "The font family to set as the frame default, if possible.
+
+This is consumed by `danny--set-frame-default-font'."
+  :type 'string
+  :group 'danny-display)
+
 
 ;;; TODO: replace `danny--buffer-is-real'!
 ;; (cl-defmacro danny--memoize (zero-arg-func &key var)
@@ -335,6 +342,18 @@
                                (danny--how-much-truncated other)))
                            (t (string-lessp it other))))))))
          (--reduce (concat acc decorated-separator it)))))
+
+(defun danny--set-frame-default-font (font)
+  "Check if FONT is available, and set it as the default for this frame.
+
+If the font family is not found in `font-family-list', then a warning message is printed and the
+font is not used.
+
+See https://www.emacswiki.org/emacs/SetFonts for more information on this process."
+  (if (member font (font-family-list))
+      (set-face-attribute 'default nil :font font)
+    (warn "Font family '%s' was not found; frame font is unchanged!"
+          font)))
 
 
 (defgroup danny-faces nil
@@ -1136,6 +1155,7 @@ Similar to `shadow', but more."
   ;; `hl-line' face is not applied.
   (add-hook 'window-setup-hook (z (enable-theme 'danny)) 99)
   (danny-theme-make-safe-local-variables)
+  (danny--set-frame-default-font danny-default-font-family)
 
   (if (file-exists-p danny-auth-info-file)
       (with-current-buffer (find-file-literally danny-auth-info-file)
