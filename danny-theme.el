@@ -1013,6 +1013,7 @@ Similar to `shadow', but more."
    ;; See http://martinowen.net/blog/2010/02/03/tips-for-emacs-ibuffer.html for more info.
    ;; You can add different groups too, not just "home", in case you ever want to.
    '(("home"
+      ("magit" (derived-mode . magit-mode))
       ("eshell" (mode . eshell-mode))
       ("dired" (mode . dired-mode))
       ("readme" (filename . "README"))
