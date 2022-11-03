@@ -1022,6 +1022,8 @@ Similar to `shadow', but more."
       ("gyp" (filename . "\\.gyp\\'"))
       ("clojure" (mode . clojure-mode))
       ("javascript" (mode . js2-mode))
+      ("rust" (mode . rust-mode))
+      ("yaml" (mode . yaml-mode))
       ("emacs-config" (or (filename . "\\.emacs\\.d")
                           (filename . "emacs-config")
                           (filename . "\\.emacs")
@@ -1055,7 +1057,11 @@ Similar to `shadow', but more."
       ("c#" (mode . csharp-mode))
       ("java" (mode . java-mode))
       ("python" (mode . python-mode))
-      ("markdown" (mode . markdown-mode))
+      ("markdown" (or (mode . markdown-mode)
+                      (mode . gfm-mode)))
+      ("xml" (mode . nxml-mode))
+      ("rst" (mode . rst-mode))
+      ("info" (mode . Info-mode))
       ;; emacs-config filter mostly blocks this but it's whatever
       ("emacs-lisp" (mode . emacs-lisp-mode))
       ("lisp" (mode . lisp-mode))
@@ -1088,7 +1094,9 @@ Similar to `shadow', but more."
            (name . "\*ESS\*")
            (name . "\*compilation\*")
            (name . "\*Backtrace\*")
-           (name . "\*Shell Command Output\*")))
+           (name . "\*Shell Command Output\*")
+           (name . "\*Async-native-compile-log\*")
+           (name . "\*Warnings\*")))
       ("yaml" (filename . "\\.yaml\\'"))
       ("matlab" (mode . matlab-mode))
       ("octave" (mode . octave-mode))
@@ -1112,7 +1120,7 @@ Similar to `shadow', but more."
         (name . "doc")
         (name . "Doc")
         (mode . Man-mode)))
-      ("default" (name . ""))))))
+      ("misc" (name . ""))))))
 
 (custom-theme-set-faces
  'danny
