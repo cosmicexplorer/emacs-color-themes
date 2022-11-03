@@ -1121,6 +1121,7 @@ Similar to `shadow', but more."
         (name . "doc")
         (name . "Doc")
         (mode . Man-mode)))
+      ("powershell" (mode . powershell-mode))
       ("misc" (name . ""))))))
 
 (custom-theme-set-faces
