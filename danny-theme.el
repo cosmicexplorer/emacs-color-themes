@@ -456,7 +456,7 @@ Similar to `shadow', but more."
  '(archive-visit-single-files t)
  ;; FIXME: *need* to somehow get all these available in this package!
  '(before-save-hook
-   '(copyright-update time-stamp nuke-whitespace-except-this-line))
+   '(time-stamp nuke-whitespace-except-this-line))
  '(bug-reference-bug-regexp
    "\\(?1:[Bb]ug ?#?\\|[Pp]atch ?#\\|RFE ?#\\|PR [a-z+-]+/\\|TODO[ (]?#\\|FIXME[ (]?#\\)(?\\(?2:[0-9]+\\(?:#[0-9]+\\)?\\))?\\|\\(?:#\\(?2:[0-9]+\\)\\)")
  '(byte-count-to-string-function (lambda (n) (file-size-human-readable n `si "@" "B")))
@@ -635,7 +635,7 @@ Similar to `shadow', but more."
  '(mode-require-final-newline t)
  '(mouse-autoselect-window nil)
  '(multi-isearch-search t)
- '(next-line-add-newlines t)
+ '(next-line-add-newlines nil)
  '(org-agenda-property-list ''("CUSTOM_ID"))
  '(org-list-allow-alphabetical t)
  '(org-pretty-tags-mode-lighter "/$$$")
