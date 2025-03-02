@@ -706,7 +706,6 @@ Similar to `shadow', but more."
  '(org-indent-indentation-per-level 0)
  '(org-quote ((t (:inherit (org-block font-lock-string-face)))))
  '(org-target ((t (:foreground "yellow" :underline "#00ced1"))))
- '(global-company-mode t)
  '(helm-completion-style 'emacs)
  '(org-fontify-quote-and-verse-blocks t)
  '(org-gnus-prefer-web-links t)
