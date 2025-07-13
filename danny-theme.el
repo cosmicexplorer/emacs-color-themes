@@ -580,6 +580,7 @@ Similar to `shadow', but more."
  '(ensime-startup-snapshot-notification nil)
  '(eshell-cmpl-suffix-list '(47 58 64))
  '(ess-S-assign "_")
+ '(raku-indent-offset 2)
  '(ess-own-style-list
    '((ess-indent-offset . 4)
      (ess-offset-arguments . open-delim)
