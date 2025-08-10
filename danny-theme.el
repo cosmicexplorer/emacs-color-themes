@@ -644,7 +644,7 @@ Similar to `shadow', but more."
  '(orgit-log-save-arguments t)
  '(pabbrev-idle-timer-verbose nil)
  '(pabbrev-minimal-expansion-p t)
- '(pabbrev-mode-hook '(pabbrev-mode-set-explicitly))
+ '(pabbrev-mode-hook '(pabbrev-mode--set-explicitly))
  '(pcomplete-autolist t)
  '(pcomplete-compare-entry-function 'file-newer-than-file-p)
  '(pcomplete-expand-before-complete t)
