@@ -1127,7 +1127,7 @@ Similar to `shadow', but more."
 (custom-theme-set-faces
  'danny
 
- '(default ((t (:height 100 :background "black" :foreground "green"))))
+ '(default ((t (:height 100 :background "black" :foreground "#00ff00"))))
  '(underline ((t (:inherit default :foreground "yellow" :underline t))))
  '(italic ((t (:inherit default :foreground "#ff1493" :slant italic))))
  '(bold ((t (:inherit default :foreground "cyan" :weight extra-bold))))
@@ -1180,9 +1180,10 @@ Similar to `shadow', but more."
  '(magit-diff-removed ((t (:background "#440000" :foreground "red"))))
  '(diff-removed ((t (:background "#440000" :foreground "red"))))
  '(magit-diff-added-highlight
-   ((t (:background "#004400" :foreground "green"))))
- '(magit-diff-added ((t (:background "#004400" :foreground "green"))))
- '(diff-added ((t (:background "#004400" :foreground "green"))))
+   ((t (:background "#004400" :foreground "#00ff00"))))
+ '(magit-diff-added ((t (:background "#004400" :foreground "#00ff00"))))
+ '(diff-added ((t (:background "#004400" :foreground "#00ff00"))))
+ '(git-gutter:added ((t (:foreground "#00ff00"))))
  '(magit-diff-hunk-heading
    ((t (:background "#550" :foreground "#dd0"))))
  '(diff-hunk-header
